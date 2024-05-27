@@ -1,11 +1,11 @@
-export type Player = {
-    rank?: number;
-    nickname: string;
-    party?: number;
+export interface Player {
+    rank?: number
+    nickname: string
+    party?: number
 };
 
-export type RankTitles = {
-    [key: number]: string;
+export interface RankTitles {
+    [key: number]: string
 };
 
 export interface TeamCombination {

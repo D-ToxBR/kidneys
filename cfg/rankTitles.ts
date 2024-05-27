@@ -1,6 +1,6 @@
-import type {RankLabels} from "../src/modules/rankProcessing/rankProcessing.ts";
+import type {RankTitles} from "../src/modules/rankProcessing/rankProcessing";
 
-const rankLabels: RankLabels = {
+const rankTitles: RankTitles = {
     7: "All Stars",
     6: "Platina",
     5: "Ouro",
@@ -11,4 +11,4 @@ const rankLabels: RankLabels = {
     0: "Ferro"
 }
 
-export default  rankLabels
+export default  rankTitles

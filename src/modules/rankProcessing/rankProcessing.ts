@@ -1,5 +1,5 @@
 import combinations from 'combinations';
-import type {IndexedTeamCombination, Player, TeamCombination} from "./rankProcessing";
+import type {IndexedTeamCombination, Player, RankTitles, TeamCombination} from "./rankProcessing";
 
 
 const sort = {
@@ -32,7 +32,7 @@ export const createRankingModule = (rankTitles: RankTitles) => {
         const partyMatch = nickname.match(/\[P(\d+)\]/);
         const party = partyMatch ? parseInt(partyMatch[1]) : undefined;
 
-        return { rank, nickname, party };
+        return {rank, nickname, party};
     };
 
     const playerToTaggedNickname = (player: Player) => {
@@ -79,15 +79,15 @@ export const createRankingModule = (rankTitles: RankTitles) => {
             const teamBRank = teamB.reduce((sum, member) => sum + (member.rank || 0), 0);
             const difference = Math.abs(teamARank - teamBRank);
 
-            return { teamA, teamB, difference };
+            return {teamA, teamB, difference};
         });
 
         const bestDifference = Math.min(...rawTeamCombinations.map(tc => tc.difference));
 
         const teamCombinations = rawTeamCombinations
             .filter(tc => tc.difference === bestDifference)
-            .filter(tc => tc.teamA.length == teamSize )
-            .filter(tc => tc.teamB.length == teamSize )
+            .filter(tc => tc.teamA.length == teamSize)
+            .filter(tc => tc.teamB.length == teamSize)
             .filter(areAllPlayersFromTheSamePartyOnTheSameTeam);
 
 
@@ -100,10 +100,10 @@ export const createRankingModule = (rankTitles: RankTitles) => {
 
     const indexTeams = (tc: TeamCombination): IndexedTeamCombination => {
         const sortedNicks = (team: Player[]): string =>
-           team
-               .map(player => player.nickname)
-               .sort()
-               .join(',')
+            team
+                .map(player => player.nickname)
+                .sort()
+                .join(',')
 
 
         return {
@@ -143,11 +143,11 @@ export const createRankingModule = (rankTitles: RankTitles) => {
     };
 
 
-    const areAllPlayersFromTheSamePartyOnTheSameTeam = (tc: TeamCombination): boolean  => {
+    const areAllPlayersFromTheSamePartyOnTheSameTeam = (tc: TeamCombination): boolean => {
 
-       const getParties = (team: Player[]): Set<number> => new Set(team
-               .filter(player => player.party)
-               .map(player => player.party))
+        const getParties = (team: Player[]): Set<number> => new Set(team
+            .filter(player => player.party)
+            .map(player => player.party))
 
         const [partiesOnA, partiesOnB] = [tc.teamA, tc.teamB]
             .map(getParties)
@@ -181,9 +181,9 @@ export const createRankingModule = (rankTitles: RankTitles) => {
 
     const formatTeamLines = (teamA: Player[], teamB: Player[]): string[] => {
         const maxLength = Math.max(teamA.length, teamB.length);
-        const toNicknameOrEmptyString = (player?: Player) =>  player ? playerToTaggedNickname(player) : '';
+        const toNicknameOrEmptyString = (player?: Player) => player ? playerToTaggedNickname(player) : '';
 
-        return Array.from({ length: maxLength }, (_, i) => {
+        return Array.from({length: maxLength}, (_, i) => {
             const [nickA, nickB] = [teamA[i], teamB[i]].map(toNicknameOrEmptyString)
             return `${nickA.padEnd(30)}${nickB}`;
         });
@@ -191,7 +191,7 @@ export const createRankingModule = (rankTitles: RankTitles) => {
 
     return {
         buildRanking,
-        extractNicknameTags: taggedNicknameToPlayer,
+        taggedNicknameToPlayer,
         buildTeamsSuggestions,
     };
 };
