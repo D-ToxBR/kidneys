@@ -5,7 +5,11 @@ set -eu
 DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 up(){
-  bun run $DIR/index.ts
+  bun run --cwd $DIR/src index.ts
+}
+
+test(){
+  bun test --cwd $DIR/src 
 }
 
 "$@"
