@@ -34,7 +34,7 @@ export function suggestTeams(oldState: VoiceState, newState: VoiceState) {
     discord.sendMessage(teamSuggestionChannel)(msg)
 }
 
-discord.onLogin(() => {
+discord.onLogin(async () => {
     discord.onNicknameChange(updateRankings)
-    discord.onVoiceChannelGetsFull(discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
+    discord.onVoiceChannelGetsFull(await discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
 })
