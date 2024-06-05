@@ -11,7 +11,7 @@ import {getOrThrow} from "../helpers/typeHelper/typeHelper.ts"
 import {mapStringLeafs} from "../helpers/generalMappers/generalMappers.ts"
 
 const discord = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates]
 })
 
 discord.once('ready', () => {
@@ -128,7 +128,6 @@ const withLogMsg = (logMsg: string) => (listener: DiscordListener) =>
 export type MemberUpdateListener = (memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) => void
 export type VoiceUpdateListener =  (oldState: VoiceState, newState: VoiceState) => void
 export type DiscordListener = MemberUpdateListener | VoiceUpdateListener
-export type HasName = {name: string}
 
 
 export default {
@@ -143,4 +142,5 @@ export default {
     onVoiceStateUpdate,
     onGuildMemberUpdate,
     sendMessage,
+    on
 }
