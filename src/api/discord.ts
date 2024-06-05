@@ -98,13 +98,13 @@ const onVoiceChannelGetsFull = (voiceChannel: VoiceChannel) => (listener: VoiceU
 }
 
 const onVoiceStateUpdate = (listener: VoiceUpdateListener) => {
-    console.log("Someone joined or left a voice room")
-    discord.on('voiceStateUpdate', listener)
+    discord.on('voiceStateUpdate',
+        withLogMsg("Someone joined or left a voice room")(listener))
 }
 
 const onGuildMemberUpdate = (listener: MemberUpdateListener) => {
-    console.log("A member was updated")
-    on('guildMemberUpdate', listener)
+    on('guildMemberUpdate',
+        withLogMsg("A member was updated")(listener))
 }
 
 
@@ -117,9 +117,17 @@ const sendMessage = (getChannel: () => TextChannel|Promise<TextChannel>) =>
         channel.send(msg)
     }
 
+const withLogMsg = (logMsg: string) => (listener: DiscordListener) =>
+    (...args: any[]) => {
+        console.log(logMsg)
+        // @ts-ignore
+        listener(...args)
+    }
+
 
 export type MemberUpdateListener = (memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) => void
 export type VoiceUpdateListener =  (oldState: VoiceState, newState: VoiceState) => void
+export type DiscordListener = MemberUpdateListener | VoiceUpdateListener
 export type HasName = {name: string}
 
 
