@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test';
-import { createRankingModule, RankTitles, Player } from './rankProcessing';
+import { createRankingModule, RankTitles, Player, AssignedToxicity, ToxicityCfg } from './rankProcessing';
+
 
 const rankTitles: RankTitles = {
     1: 'Bronze',
@@ -9,22 +10,84 @@ const rankTitles: RankTitles = {
     5: 'Diamond',
 };
 
+const toxicityCfg: ToxicityCfg = {
+  possibleToxicityLevels: '🩵🟢🟨🔶❌',
+  defaultAssignedToxicity: {is: '🟢', playsWith:  '🟨' }
+}
+
 describe('Ranking Module', () => {
-    const { buildRanking, extractNicknameTags, buildTeamsSuggestions } = createRankingModule(rankTitles);
+    const { buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions } = createRankingModule(rankTitles, toxicityCfg);
 
     it('should extract nickname tags correctly', () => {
         const nickname = '[3] PlayerOne [P1]';
-        const expected = { rank: 3, nickname: '[3] PlayerOne [P1]', party: 1 };
-        const result = extractNicknameTags(nickname);
-        expect(result).toEqual(expected);
+        const result = taggedNicknameToPlayer(nickname);
+
+        expect(result.rank).toEqual(3);
+        expect(result.nickname).toEqual('[3] PlayerOne [P1]');
+        expect(result.party).toEqual(1)
     });
 
-    it('should return undefined for rank and party if tags are not present', () => {
+    it('should return for rank and party if tags are not present', () => {
         const nickname = 'PlayerTwo';
         const expected = { rank: undefined, nickname: 'PlayerTwo', party: undefined };
-        const result = extractNicknameTags(nickname);
-        expect(result).toEqual(expected);
+
+        const result = taggedNicknameToPlayer(nickname);
+
+        expect(result.nickname).toEqual(nickname);
+        expect(result.rank).toEqual(undefined);
+        expect(result.party).toEqual(undefined)
     });
+
+    it('should extract nickname toxicity levels correctly', () => {
+        // given
+        const nickname = '[7] GoodBoy 🩵🔶';
+
+        const expectedToxicity: AssignedToxicity = {
+          is: "🩵", playsWith: "🔶" 
+        }
+
+        // when
+        const result = taggedNicknameToPlayer(nickname);
+
+        // then
+        expect(result.nickname).toEqual(nickname)
+        expect(result.toxicity).toEqual(expectedToxicity);
+    });
+
+    it('should extract nickname toxicity levels correctly, ignoring whitespaces at the end', () => {
+        // given
+        const nickname = '[7] Ok 🟨❌   ';
+
+        const expectedToxicity: AssignedToxicity = {
+          is: "🟨", playsWith: "❌" 
+        }
+
+        // when
+        const result = taggedNicknameToPlayer(nickname);
+
+        // then
+        expect(result.nickname).toEqual(nickname)
+        expect(result.toxicity).toEqual(expectedToxicity);
+    });
+
+
+    it('should use default toxicity levels when they cannot be extracted', () => {
+        // given
+        const nickname = '[7] whut ❌';
+
+
+        // when
+        const result = taggedNicknameToPlayer(nickname);
+
+        // then
+        expect(result.nickname).toEqual(nickname)
+        expect(result.toxicity).toEqual(toxicityCfg.defaultAssignedToxicity);
+    });
+
+
+
+
+
 
     it('should build ranking correctly', () => {
         const nicknames = ['[3] PlayerOne', '[1] PlayerTwo', '[2] PlayerThree'];

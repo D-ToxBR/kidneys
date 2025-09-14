@@ -1,5 +1,7 @@
 import combinations from 'combinations';
-import type {IndexedTeamCombination, Player, RankTitles, TeamCombination} from "./rankProcessing";
+import type {IndexedTeamCombination, Player, RankTitles, TeamCombination, AssignedToxicity} from "./rankProcessing";
+import type {ToxicityLevel, ToxicityCfg} from "../../../cfg/toxicityLevels.ts";
+import {toxicityCfg} from "../../../cfg/toxicityLevels.ts";
 
 
 const sort = {
@@ -11,7 +13,7 @@ const sort = {
     }
 };
 
-export const createRankingModule = (rankTitles: RankTitles) => {
+export const createRankingModule = (rankTitles: RankTitles, toxicityCfg: ToxicityCfg) => {
     const buildRanking = (nicknames: string[]): string[] => {
         const rankedMembers = nicknames
             .map(taggedNicknameToPlayer)
@@ -32,8 +34,27 @@ export const createRankingModule = (rankTitles: RankTitles) => {
         const partyMatch = nickname.match(/\[P(\d+)\]/);
         const party = partyMatch ? parseInt(partyMatch[1]) : undefined;
 
-        return {rank, nickname, party};
+        const toxicity = extractAssignedToxicity(nickname);
+
+        return {rank, nickname, party, toxicity};
     };
+
+    const extractAssignedToxicity = (nickname: string): AssignedToxicity => {
+      const chars = [...nickname.trim()];
+      const lastTwo = chars.slice(-2);
+      const validEmoji = lastTwo.filter(char => 
+        toxicityCfg.possibleToxicityLevels.includes(char as ToxicityLevel)
+      );
+
+      return validEmoji.length !== 2
+        ? toxicityCfg.defaultAssignedToxicity
+        : { 
+            is: validEmoji[0] as ToxicityLevel, 
+            playsWith: validEmoji[1] as ToxicityLevel 
+          }
+    };
+
+
 
     const playerToTaggedNickname = (player: Player) => {
         const partySuffix = player.party !== undefined && player !== null

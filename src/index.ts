@@ -4,9 +4,11 @@ import {type Player} from './modules/rankProcessing/rankProcessing.ts'
 import {createRankingModule} from "./modules/rankProcessing/rankProcessing.ts"
 import {getOrThrow} from "./helpers/typeHelper/typeHelper.ts"
 import rankTitles from "../cfg/rankTitles.ts";
+import { POSSIBLE_TOXICITY_LEVELS, DEFAULT_ASSIGNED_TOXICITY } from "../cfg/toxicityLevels.ts";
 
 
-const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions} = createRankingModule(rankTitles)
+
+const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions} = createRankingModule(rankTitles, )
 
 export async function updateRankings(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
     const channel = discord.channels().text().rankings().cs2
