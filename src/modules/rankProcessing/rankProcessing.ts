@@ -214,6 +214,7 @@ export const createRankingModule = (rankTitles: RankTitles, toxicityCfg: Toxicit
         buildRanking,
         taggedNicknameToPlayer,
         buildTeamsSuggestions,
+        extractAssignedToxicity,
     };
 };
 

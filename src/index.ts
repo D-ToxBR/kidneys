@@ -4,11 +4,58 @@ import {type Player} from './modules/rankProcessing/rankProcessing.ts'
 import {createRankingModule} from "./modules/rankProcessing/rankProcessing.ts"
 import {getOrThrow} from "./helpers/typeHelper/typeHelper.ts"
 import rankTitles from "../cfg/rankTitles.ts";
-import { POSSIBLE_TOXICITY_LEVELS, DEFAULT_ASSIGNED_TOXICITY } from "../cfg/toxicityLevels.ts";
+import { toxicityCfg, type ToxicityLevel } from "../cfg/toxicityLevels.ts";
 
 
 
-const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions} = createRankingModule(rankTitles, )
+const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions, extractAssignedToxicity } = createRankingModule(rankTitles, toxicityCfg)
+
+export async function setDefaultRankOnNickname(member: GuildMember) {
+    const originalNick = member.displayName
+    const newNick = `[?] ${originalNick}`
+    discord.changeNickname(member, newNick)
+}
+
+export async function setDefaultToxicityOnNickname(member: GuildMember) {
+    const {is, playsWith} = toxicityCfg.defaultAssignedToxicity
+
+    const originalNick = member.displayName
+    const newNick = `${originalNick} ${is}${playsWith}`
+    discord.changeNickname(member, newNick)
+}
+
+export async function setToxicityRoleFromNickname(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
+    const newNickname = memberNew.displayName;
+    console.log(`Nickname for ${memberNew.user.tag} changed to "${newNickname}". Processing toxicity roles.`);
+
+    const assignedToxicity = extractAssignedToxicity(newNickname);
+
+    console.log(`Cleaning up all existing toxicity roles for ${memberNew.user.tag}...`);
+    const roleRemovalPromises: Promise<void>[] = [];
+    for (const level of toxicityCfg.possibleToxicityLevels) {
+        const typedLevel = level as ToxicityLevel;
+        const isRoleNameToRemove = toxicityCfg.toxicityRoles.is[typedLevel];
+        const playsWithRoleNameToRemove = toxicityCfg.toxicityRoles.playsWith[typedLevel];
+
+        roleRemovalPromises.push(discord.removeRole(memberNew, isRoleNameToRemove));
+        roleRemovalPromises.push(discord.removeRole(memberNew, playsWithRoleNameToRemove));
+    }
+    await Promise.all(roleRemovalPromises);
+    console.log(`Cleanup complete. Now assigning new roles based on extracted toxicity.`);
+
+    const isRoleToGive = toxicityCfg.toxicityRoles.is[assignedToxicity.is];
+    const playsWithRoleToGive = toxicityCfg.toxicityRoles.playsWith[assignedToxicity.playsWith];
+
+    console.log(`Assigning new roles: [is: "${isRoleToGive}", playsWith: "${playsWithRoleToGive}"]`);
+    const roleAssignmentPromises: Promise<void>[] = [
+        discord.giveRole(memberNew, isRoleToGive),
+        discord.giveRole(memberNew, playsWithRoleToGive)
+    ];
+    await Promise.all(roleAssignmentPromises);
+
+    console.log(`Successfully updated toxicity roles for ${memberNew.user.tag}.`);
+}
+
 
 export async function updateRankings(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
     const channel = discord.channels().text().rankings().cs2
@@ -37,6 +84,9 @@ export function suggestTeams(oldState: VoiceState, newState: VoiceState) {
 }
 
 discord.onLogin(async () => {
+    discord.onMemberJoin(setDefaultToxicityOnNickname)
+    discord.onMemberJoin(setDefaultRankOnNickname)
+    discord.onNicknameChange(setToxicityRoleFromNickname)
     discord.onNicknameChange(updateRankings)
     discord.onVoiceChannelGetsFull(await discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
 })

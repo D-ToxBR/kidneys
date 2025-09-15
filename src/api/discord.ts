@@ -4,7 +4,8 @@ import {
     GuildChannel,
     GuildMember,
     type PartialGuildMember,
-    TextChannel, VoiceChannel, type VoiceState
+    TextChannel, VoiceChannel, type VoiceState,
+    Role
 } from "discord.js"
 import cfg from "../../cfg/discordCfg.ts"
 import {getOrThrow} from "../helpers/typeHelper/typeHelper.ts"
@@ -53,7 +54,6 @@ const getChannelByName = async (channelName: string): Promise<GuildChannel> => {
 }
 
 
-
 const getTextChannelByName = async (channelName: string): Promise<TextChannel> => {
     const genericChannel = await getChannelByName(channelName)
 
@@ -70,6 +70,83 @@ const getVoiceChannelByName = async (channelName: string): Promise<VoiceChannel>
         throw new Error(`'${channelName}' is not a text channel.`)
 
     return genericChannel as VoiceChannel
+}
+
+
+const getRoleByName = async (roleName: string): Promise<Role | undefined> => {
+    const activeGuild = guild();
+
+    console.log(`Searching for role '${roleName}' in cache...`);
+    const roleFromCache = activeGuild.roles.cache.find(role => role.name === roleName);
+
+    if (roleFromCache) {
+        console.log(`Found role '${roleName}' in cache.`);
+        return roleFromCache;
+    }
+
+    try {
+        console.log(`Role '${roleName}' not in cache, fetching all roles from Discord API...`);
+        const allRolesFromApi = await activeGuild.roles.fetch();
+        const roleFromApi = allRolesFromApi.find(role => role.name === roleName);
+
+        if (roleFromApi) {
+            console.log(`Found role '${roleName}' after fetching from API.`);
+            return roleFromApi;
+        }
+
+        console.error(`Unable to find role '${roleName}' after searching cache and fetching from API.`);
+        return undefined;
+
+    } catch (error) {
+        console.error(`An API error occurred while fetching roles to find '${roleName}':`, error);
+        return undefined;
+    }
+};
+
+const giveRole = async (member: GuildMember, roleName: string): Promise<void> => {
+    const roleToGive = await getRoleByName(roleName);
+
+    if (!roleToGive) {
+        // The error is already logged by getRoleByName, so we can simply exit.
+        return;
+    }
+
+    try {
+        await member.roles.add(roleToGive);
+        console.log(`Successfully gave role "${roleToGive.name}" to ${member.user.tag}.`);
+    } catch (error) {
+        console.error(`Error giving role "${roleToGive.name}" to ${member.user.tag}:`, error);
+    }
+};
+
+const removeRole = async (member: GuildMember, roleName: string): Promise<void> => {
+    const roleToRemove = await getRoleByName(roleName);
+
+    if (!roleToRemove) {
+        // The error is already logged by getRoleByName, so we can simply exit.
+        return;
+    }
+
+    try {
+        await member.roles.remove(roleToRemove);
+        console.log(`Successfully removed role "${roleToRemove.name}" from ${member.user.tag}.`);
+    } catch (error) {
+        console.error(`Error removing role "${roleToRemove.name}" from ${member.user.tag}:`, error);
+    }
+};
+
+
+const changeNickname = async (member: GuildMember, newNickname: string): Promise<void> => {
+    try {
+        await member.setNickname(newNickname);
+        console.log(`Successfully changed nickname for ${member.user.tag} to "${newNickname}".`);
+    } catch (error) {
+        console.error(`Error changing nickname for ${member.user.tag}:`, error);
+    }
+};
+
+const onMemberJoin = (listener: MemberJoinListener) => {
+    on('guildMemberAdd', withLogMsg("A new member joined the server")(listener))
 }
 
 const onNicknameChange = (listener: MemberUpdateListener) => {
@@ -125,9 +202,10 @@ const withLogMsg = (logMsg: string) => (listener: DiscordListener) =>
     }
 
 
+export type MemberJoinListener = (member: GuildMember) => void
 export type MemberUpdateListener = (memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) => void
 export type VoiceUpdateListener =  (oldState: VoiceState, newState: VoiceState) => void
-export type DiscordListener = MemberUpdateListener | VoiceUpdateListener
+export type DiscordListener = MemberUpdateListener | VoiceUpdateListener | MemberJoinListener
 
 
 export default {
@@ -136,6 +214,11 @@ export default {
     getChannelByName,
     getTextChannelByName,
     getVoiceChannelByName,
+    getRoleByName,
+    giveRole,
+    removeRole,
+    changeNickname,
+    onMemberJoin,
     onLogin,
     onNicknameChange,
     onVoiceChannelGetsFull,
