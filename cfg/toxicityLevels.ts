@@ -7,18 +7,18 @@ export const toxicityCfg: ToxicityCfg = {
   defaultAssignedToxicity: {is: '🟡', playsWith:  '🟡' },
   toxicityRoles: {
     is: {
-      '🩵': '🩵 Guia novatos nos jogos',
-      '✅': '✅️ é Gentil (costuma não cobrar)',
-      '🟡': '🟡 é Amigável (pode cobrar as vezes)',
-      '🔶️': '🔶️ está Em avaliação após problemas',
-      '❌️': '❌️ tem Histórico Tóxico',
+      '🩵': '1417253017463427242',
+      '✅': '1403603367170801685',
+      '🟡': '1403609530008473682',
+      '🔶': '1403610832851570799',
+      '❌': '1403611883755274271',
     },
     playsWith: {
-      '🩵': 'joga c/ quem Guia novatos nos jogos 🩵',
-      '✅️': 'joga c/ Gentis (que não cobram) ✅️',
-      '🟡': 'joga c/ Amigáveis (que cobram as vezes)🟡',
-      '🔶️': 'joga c/ quem está Em avaliação após problemas 🔶️',
-      '❌️': 'joga c/ quem tem Histórico Tóxico ❌️',
+      '🩵': '1417253275748663306',
+      '✅': '1403604906815783004',
+      '🟡': '1403612329584889957',
+      '🔶': '1403613137273622578',
+      '❌': '1403613426500239462',
     }
   },
 }

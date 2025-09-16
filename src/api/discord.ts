@@ -73,41 +73,36 @@ const getVoiceChannelByName = async (channelName: string): Promise<VoiceChannel>
 }
 
 
-const getRoleByName = async (roleName: string): Promise<Role | undefined> => {
+const getRoleById = async (roleId: string): Promise<Role | undefined> => {
     const activeGuild = guild();
 
-    console.log(`Searching for role '${roleName}' in cache...`);
-    const roleFromCache = activeGuild.roles.cache.find(role => role.name === roleName);
-
+    console.log(`Searching for role with ID '${roleId}' in cache...`);
+    const roleFromCache = activeGuild.roles.cache.get(roleId);
     if (roleFromCache) {
-        console.log(`Found role '${roleName}' in cache.`);
+        console.log(`Found role '${roleFromCache.name}' in cache.`);
         return roleFromCache;
     }
 
     try {
-        console.log(`Role '${roleName}' not in cache, fetching all roles from Discord API...`);
-        const allRolesFromApi = await activeGuild.roles.fetch();
-        const roleFromApi = allRolesFromApi.find(role => role.name === roleName);
-
+        console.log(`Role ID '${roleId}' not in cache, fetching from Discord API...`);
+        const roleFromApi = await activeGuild.roles.fetch(roleId);
         if (roleFromApi) {
-            console.log(`Found role '${roleName}' after fetching from API.`);
+            console.log(`Found role '${roleFromApi.name}' after fetching from API.`);
             return roleFromApi;
         }
-
-        console.error(`Unable to find role '${roleName}' after searching cache and fetching from API.`);
+        // This part is unlikely to be reached if fetch succeeds, but is good for safety
         return undefined;
-
     } catch (error) {
-        console.error(`An API error occurred while fetching roles to find '${roleName}':`, error);
+        console.error(`Failed to fetch role with ID '${roleId}':`, error);
         return undefined;
     }
 };
 
-const giveRole = async (member: GuildMember, roleName: string): Promise<void> => {
-    const roleToGive = await getRoleByName(roleName);
+const giveRoleById = async (member: GuildMember, roleId: string): Promise<void> => {
+    const roleToGive = await getRoleById(roleId);
 
     if (!roleToGive) {
-        // The error is already logged by getRoleByName, so we can simply exit.
+        // The error is already logged by getRoleById.
         return;
     }
 
@@ -115,15 +110,15 @@ const giveRole = async (member: GuildMember, roleName: string): Promise<void> =>
         await member.roles.add(roleToGive);
         console.log(`Successfully gave role "${roleToGive.name}" to ${member.user.tag}.`);
     } catch (error) {
-        console.error(`Error giving role "${roleToGive.name}" to ${member.user.tag}:`, error);
+        console.error(`Error giving role "${roleToGive.name}" (ID: ${roleId}) to ${member.user.tag}:`, error);
     }
 };
 
-const removeRole = async (member: GuildMember, roleName: string): Promise<void> => {
-    const roleToRemove = await getRoleByName(roleName);
+const removeRoleById = async (member: GuildMember, roleId: string): Promise<void> => {
+    const roleToRemove = await getRoleById(roleId);
 
     if (!roleToRemove) {
-        // The error is already logged by getRoleByName, so we can simply exit.
+        // The error is already logged by getRoleById.
         return;
     }
 
@@ -131,7 +126,7 @@ const removeRole = async (member: GuildMember, roleName: string): Promise<void> 
         await member.roles.remove(roleToRemove);
         console.log(`Successfully removed role "${roleToRemove.name}" from ${member.user.tag}.`);
     } catch (error) {
-        console.error(`Error removing role "${roleToRemove.name}" from ${member.user.tag}:`, error);
+        console.error(`Error removing role "${roleToRemove.name}" (ID: ${roleId}) from ${member.user.tag}:`, error);
     }
 };
 
@@ -214,9 +209,9 @@ export default {
     getChannelByName,
     getTextChannelByName,
     getVoiceChannelByName,
-    getRoleByName,
-    giveRole,
-    removeRole,
+    getRoleById,
+    giveRoleById,
+    removeRoleById,
     changeNickname,
     onMemberJoin,
     onLogin,
