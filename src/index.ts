@@ -10,18 +10,13 @@ import { toxicityCfg, type ToxicityLevel } from "../cfg/toxicityLevels.ts";
 
 const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions, extractAssignedToxicity } = createRankingModule(rankTitles, toxicityCfg)
 
-export async function setDefaultRankOnNickname(member: GuildMember) {
-    const originalNick = member.displayName
-    const newNick = `[?] ${originalNick}`
-    discord.changeNickname(member, newNick)
-}
-
-export async function setDefaultToxicityOnNickname(member: GuildMember) {
+export async function setDefaultRankAndToxicityOnNickname(member: GuildMember) {
     const {is, playsWith} = toxicityCfg.defaultAssignedToxicity
+    const defaultRank = "[?]"
 
     const originalNick = member.displayName
-    const newNick = `${originalNick} ${is}${playsWith}`
-    discord.changeNickname(member, newNick)
+    const newNick = `${defaultRank} ${originalNick} ${is}${playsWith}`
+    await discord.changeNickname(member, newNick)
 }
 
 export async function setToxicityRolesFromNickname(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
@@ -88,8 +83,7 @@ export function suggestTeams(oldState: VoiceState, newState: VoiceState) {
 }
 
 discord.onLogin(async () => {
-    discord.onMemberJoin(setDefaultToxicityOnNickname)
-    discord.onMemberJoin(setDefaultRankOnNickname)
+    discord.onMemberJoin(setDefaultRankAndToxicityOnNickname)
     discord.onNicknameChange(setToxicityRolesFromNickname)
     discord.onNicknameChange(updateRankings)
     discord.onVoiceChannelGetsFull(await discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
