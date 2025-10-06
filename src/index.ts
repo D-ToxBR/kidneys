@@ -2,13 +2,17 @@ import {GuildMember, type PartialGuildMember, VoiceState} from 'discord.js'
 import discord from './api/discord.ts'
 import {type Player} from './modules/rankProcessing/rankProcessing.ts'
 import {createRankingModule} from "./modules/rankProcessing/rankProcessing.ts"
+import {createLineupModule, type LineupMap} from "./modules/lineupProcessing/lineupProcessing.ts"
 import {getOrThrow} from "./helpers/typeHelper/typeHelper.ts"
 import rankTitles from "../cfg/rankTitles.ts";
 import { toxicityCfg, type ToxicityLevel } from "../cfg/toxicityLevels.ts";
+import lineupCfg from "../cfg/lineupsCfg.ts";
 
 
 
 const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions, extractAssignedToxicity } = createRankingModule(rankTitles, toxicityCfg)
+const { isLineup, getFormattedLineups } = createLineupModule(lineupCfg.lineupPrefix)
+
 
 export async function setDefaultRankAndToxicityOnNickname(member: GuildMember) {
     const {is, playsWith} = toxicityCfg.defaultAssignedToxicity
@@ -55,6 +59,22 @@ export async function setToxicityRolesFromNickname(memberOld: GuildMember | Part
     console.log(`Successfully updated toxicity roles for ${memberNew.user.tag}.`);
 }
 
+export async function updateLineups(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
+    const channel = discord.channels().text().lineups().cs2
+
+    const lineups = (await discord.getAllRoles())
+      .filter(role => isLineup(role.name))
+
+    const lineupPromises = lineups.map(async role => [
+        role.name,
+        await discord.getMembersWithRoleId(role.id)
+    ] as const)
+
+    const lineupMap: LineupMap = Object.fromEntries(await Promise.all(lineupPromises))
+
+    const msg = getFormattedLineups(lineupMap)
+    discord.sendMessage(channel)(msg)
+}
 
 export async function updateRankings(memberOld: GuildMember | PartialGuildMember, memberNew: GuildMember) {
     const channel = discord.channels().text().rankings().cs2
@@ -86,5 +106,6 @@ discord.onLogin(async () => {
     discord.onMemberJoin(setDefaultRankAndToxicityOnNickname)
     discord.onNicknameChange(setToxicityRolesFromNickname)
     discord.onNicknameChange(updateRankings)
+    discord.onRoleChange(updateLineups)
     discord.onVoiceChannelGetsFull(await discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
 })

@@ -21,6 +21,9 @@ export default {
             rankings: {
                 cs2: "cs2-ranking",
             },
+            lineups: {
+              cs2: "cs2-lineups"
+            }
         },
         voice: {
             mix: {

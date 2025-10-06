@@ -72,6 +72,45 @@ const getVoiceChannelByName = async (channelName: string): Promise<VoiceChannel>
     return genericChannel as VoiceChannel
 }
 
+const getAllRoles = async (): Promise<Role[]> => {
+    const activeGuild = guild();
+    
+    console.log('Fetching all roles...');
+    
+    const rolesFromCache = Array.from(activeGuild.roles.cache.values());
+    if (rolesFromCache.length > 0) {
+        console.log(`Found ${rolesFromCache.length} roles in cache.`);
+        return rolesFromCache as Role[];
+    }
+    
+    // If cache is empty, fetch from API
+    try {
+        console.log('Cache empty, fetching roles from Discord API...');
+        const rolesCollection = await activeGuild.roles.fetch();
+        const rolesArray = Array.from(rolesCollection.values());
+        console.log(`Fetched ${rolesArray.length} roles from API.`);
+        return rolesArray as Role[];
+    } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        return [];
+    }
+};
+
+const getMembersWithRoleId = async (roleId: string): Promise<GuildMember[]> => {
+    const role = await getRoleById(roleId);
+    
+    if (!role) {
+        console.warn(`Cannot get members: role with ID '${roleId}' not found.`);
+        return [];
+    }
+    
+    console.log(`Getting members with role '${role.name}'...`);
+    const members  = Array.from(role.members.values());
+    console.log(`Found ${members.length} members with role '${role.name}'.`);
+    
+    return members;
+};
+
 
 const getRoleById = async (roleId: string): Promise<Role | undefined> => {
     const activeGuild = guild();
@@ -140,6 +179,37 @@ const changeNickname = async (member: GuildMember, newNickname: string): Promise
     }
 };
 
+const onRoleChange = (listener: MemberUpdateListener) => {
+    onGuildMemberUpdate((memberOld, memberNew) => {
+        const oldRoles = memberOld.roles.cache;
+        const newRoles = memberNew.roles.cache;
+        
+        // Check if roles changed
+        if (oldRoles.size === newRoles.size && 
+            oldRoles.every(role => newRoles.has(role.id))) {
+            console.log(`Roles for ${memberNew.user.tag} did not change`);
+            return;
+        }
+        
+        // Find added roles
+        const addedRoles = newRoles.filter(role => !oldRoles.has(role.id));
+        if (addedRoles.size > 0) {
+            const roleNames = addedRoles.map(r => r.name).join(', ');
+            console.log(`Roles added to ${memberNew.user.tag}: ${roleNames}`);
+        }
+        
+        // Find removed roles
+        const removedRoles = oldRoles.filter(role => !newRoles.has(role.id));
+        if (removedRoles.size > 0) {
+            const roleNames = removedRoles.map(r => r.name).join(', ');
+            console.log(`Roles removed from ${memberNew.user.tag}: ${roleNames}`);
+        }
+        
+        listener(memberOld, memberNew);
+    });
+};
+
+
 const onMemberJoin = (listener: MemberJoinListener) => {
     on('guildMemberAdd', withLogMsg("A new member joined the server")(listener))
 }
@@ -185,8 +255,12 @@ const sendMessage = (getChannel: () => TextChannel|Promise<TextChannel>) =>
         const channel = await getChannel()
         const textLines = getTextLines()
         const msg = textLines.join('\n')
-        console.log(`Sending to channel <${channel.name}> the following message:\n${msg}`)
-        channel.send(msg)
+        if (!msg.length){
+          console.log(`Not Sending message to channel <${channel.name}> because it is empty.`)
+        } else {
+          console.log(`Sending to channel <${channel.name}> the following message:\n${msg}`)
+          channel.send(msg)
+        }
     }
 
 const withLogMsg = (logMsg: string) => (listener: DiscordListener) =>
@@ -209,10 +283,13 @@ export default {
     getChannelByName,
     getTextChannelByName,
     getVoiceChannelByName,
+    getAllRoles,
+    getMembersWithRoleId,
     getRoleById,
     giveRoleById,
     removeRoleById,
     changeNickname,
+    onRoleChange,
     onMemberJoin,
     onLogin,
     onNicknameChange,
