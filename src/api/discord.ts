@@ -32,10 +32,9 @@ const guild = () => getOrThrow(
 )
 
 const channels = () => ({
-        text: mapStringLeafs(getTextChannelByName)(cfg.channels.text),
-        voice: mapStringLeafs(getVoiceChannelByName)(cfg.channels.voice),
+        text: mapStringLeafs(getTextChannelById)(cfg.channels.text),
+        voice: mapStringLeafs(getVoiceChannelById)(cfg.channels.voice),
 })
-
 
 
 const getChannelByName = async (channelName: string): Promise<GuildChannel> => {
@@ -57,6 +56,24 @@ const getChannelByName = async (channelName: string): Promise<GuildChannel> => {
     throw new Error(`Unable to find discord channel '${channelName}`)
 }
 
+const getChannelById = async (channelId: string): Promise<GuildChannel> => {
+
+    const channelSources: Array<() => Promise<GuildChannel[]>> = [
+        () => guild().channels.cache,
+        guild().channels.fetch.bind(guild().channels)
+    ]
+
+    for (const channelSource of channelSources) {
+        const channels = await channelSource();
+        const genericChannel = channels.find(
+            (channel) => channel.id === channelId
+        );
+        if (genericChannel) {
+            return genericChannel;
+        }
+    }
+    throw new Error(`Unable to find discord channel '${channelId}`)
+}
 
 const getTextChannelByName = async (channelName: string): Promise<TextChannel> => {
     const genericChannel = await getChannelByName(channelName)
@@ -75,6 +92,27 @@ const getVoiceChannelByName = async (channelName: string): Promise<VoiceChannel>
 
     return genericChannel as VoiceChannel
 }
+
+const getTextChannelById = async (channelId: string): Promise<TextChannel> => {
+    const genericChannel = await getChannelById(channelId)
+
+    if (!genericChannel.isTextBased())
+        throw new Error(`'${channelId}' is not a text channel.`)
+
+    return genericChannel as TextChannel
+}
+
+const getVoiceChannelById = async (channelid: string): Promise<VoiceChannel> => {
+    const genericChannel = await getChannelById(channelid)
+
+    if (!genericChannel.isTextBased())
+        throw new Error(`'${channelid}' is not a text channel.`)
+
+    return genericChannel as VoiceChannel
+}
+
+
+
 
 const getAllRoles = async (): Promise<Role[]> => {
     const activeGuild = guild();

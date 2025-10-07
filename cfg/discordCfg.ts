@@ -16,18 +16,18 @@ export default {
     channels: {
         text: {
             mix: {
-                matchmakingTeams: "connect-link",
+                matchmakingTeams: "1222320514585067622", // connect-link
             },
             rankings: {
-                cs2: "cs2-ranking",
+                cs2: "1238582671106379797", // cs2-ranking
             },
             lineups: {
-              cs2: "cs2-lineups"
+              cs2: "1424898593600438393",  // cs2-lineups
             }
         },
         voice: {
             mix: {
-                matchmakingPlayers: "Mix - Tirando Times",
+                matchmakingPlayers: "1412478610002018406", // Mix - Tirando Times
             },
         }
     },
