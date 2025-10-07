@@ -9,7 +9,7 @@ import {
 } from "discord.js"
 import cfg from "../../cfg/discordCfg.ts"
 import {getOrThrow} from "../helpers/typeHelper/typeHelper.ts"
-import {mapStringLeafs} from "../helpers/generalMappers/generalMappers.ts"
+import {mapStringLeafs, getStringLeafs} from "../helpers/generalMappers/generalMappers.ts"
 
 const discord = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates]
@@ -34,6 +34,7 @@ const guild = () => getOrThrow(
 const channels = () => ({
         text: mapStringLeafs(getTextChannelById)(cfg.channels.text),
         voice: mapStringLeafs(getVoiceChannelById)(cfg.channels.voice),
+        allVoice: getStringLeafs(cfg.channels.voice).map(getVoiceChannelById)
 })
 
 
