@@ -13,6 +13,7 @@ describe('Lineup Module', () => {
         expect(mod.isLineup("dtox.SM")).toBeTrue()
         expect(mod.isLineup("DTOX.jc")).toBeTrue()
         expect(mod.isLineup("dToX.jc")).toBeTrue()
+        expect(mod.isLineup("dToX.JC (João Câmara)")).toBeTrue()
     })
 
     it('getFormattedLineups: should return empty message when no lineups', () => {
@@ -28,12 +29,13 @@ describe('Lineup Module', () => {
         const formatter = mod.getFormattedLineups(lineups);
         const result = formatter();
         const expected = [
-            'Lineups:',
+            '# Lineups',
             '',
-            'dtox.A:',
-            '  - Alice',
-            '  - Bob',
-            '  - Charlie',
+            '',
+            '- **dtox.A**',
+            'Alice',
+            'Bob',
+            'Charlie',
             ''
         ];
         expect(result).toEqual(expected);
@@ -48,18 +50,19 @@ describe('Lineup Module', () => {
         const formatter = mod.getFormattedLineups(lineups);
         const result = formatter();
         const expected = [
-            'Lineups:',
+            '# Lineups',
             '',
-            'dtox.A:',
-            '  - Alice',
-            '  - Bob',
             '',
-            'dtox.B:',
-            '  - David',
-            '  - Eve',
+            '- **dtox.A**',
+            'Alice',
+            'Bob',
             '',
-            'dtox.C:',
-            '  - Frank',
+            '- **dtox.B**',
+            'David',
+            'Eve',
+            '',
+            '- **dtox.C**',
+            'Frank',
             ''
         ];
         expect(result).toEqual(expected);
@@ -74,16 +77,17 @@ describe('Lineup Module', () => {
         const formatter = mod.getFormattedLineups(lineups);
         const result = formatter();
         const expected = [
-            'Lineups:',
+            '# Lineups',
             '',
-            'dtox.A:',
-            '  - Alice',
             '',
-            'dtox.B:',
+            '- **dtox.A**',
+            'Alice',
+            '',
+            '- **dtox.B**',
             '  (no players)',
             '',
-            'dtox.C:',
-            '  - Charlie',
+            '- **dtox.C**',
+            'Charlie',
             ''
         ];
         expect(result).toEqual(expected);
@@ -97,15 +101,34 @@ describe('Lineup Module', () => {
         const formatter = mod.getFormattedLineups(lineups);
         const result = formatter();
         const expected = [
-            'Lineups:',
+            '# Lineups',
             '',
-            'dtox.A:',
-            '  - Bob',
-            '  - Charlie',
             '',
-            'dtox.Z:',
-            '  - Alice',
-            '  - Zoe',
+            '- **dtox.A**',
+            'Bob',
+            'Charlie',
+            '',
+            '- **dtox.Z**',
+            'Alice',
+            'Zoe',
+            ''
+        ];
+        expect(result).toEqual(expected);
+    })
+
+    it('getFormattedLineups: should handle lineup names with parentheses', () => {
+        const lineups = {
+            'dtox.A (Team Alpha)': ['Alice', 'Bob']
+        };
+        const formatter = mod.getFormattedLineups(lineups);
+        const result = formatter();
+        const expected = [
+            '# Lineups',
+            '',
+            '',
+            '- **dtox.A** (Team Alpha)',
+            'Alice',
+            'Bob',
             ''
         ];
         expect(result).toEqual(expected);
