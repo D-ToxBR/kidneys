@@ -15,8 +15,12 @@ const discord = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates]
 })
 
-discord.once('ready', () => {
+discord.once('ready', async () => {
     console.log(`Logged in as ${discord.user?.tag || '<unable to retrieve user>'}!`)
+    console.log('')
+    console.log(`Caching all members...`)
+    await guild().members.fetch();
+    console.log(`Cached all members.`)
 })
 
 const on = discord.on.bind(discord)

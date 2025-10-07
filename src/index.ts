@@ -68,6 +68,7 @@ export async function updateLineups(memberOld: GuildMember | PartialGuildMember,
     const lineupPromises = lineups.map(async role => [
         role.name,
         await discord.getMembersWithRoleId(role.id)
+          .then(members => members.map(member => member.nickname))
     ] as const)
 
     const lineupMap: LineupMap = Object.fromEntries(await Promise.all(lineupPromises))
