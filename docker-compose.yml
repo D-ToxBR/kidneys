@@ -4,7 +4,8 @@ services:
   kidneys:
     build: .
     volumes:
-      - .:/app
+      - .:/app             # Mount local code into /app
+      - /app/node_modules  # Use the node_modules from the image, not the host
     working_dir: /app
     command: ./run.sh up
     restart: always
