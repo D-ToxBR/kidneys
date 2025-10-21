@@ -26,6 +26,7 @@ export default {
             }
         },
         voice: {
+            grandstand: "1239705898830790808",
             lobbies: {
                 ok: {
                   l01: "1403619257169875006",
