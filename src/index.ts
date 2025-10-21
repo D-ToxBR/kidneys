@@ -1,5 +1,6 @@
 import {GuildMember, type PartialGuildMember, VoiceState} from 'discord.js'
 import discord from './api/discord.ts'
+import whatsapp from './api/whatsapp.ts'
 import {type Player} from './modules/rankProcessing/rankProcessing.ts'
 import {createRankingModule} from "./modules/rankProcessing/rankProcessing.ts"
 import {createLineupModule, type LineupMap} from "./modules/lineupProcessing/lineupProcessing.ts"
@@ -11,7 +12,7 @@ import lineupCfg from "../cfg/lineupsCfg.ts";
 
 
 const {buildRanking, taggedNicknameToPlayer, buildTeamsSuggestions, extractAssignedToxicity } = createRankingModule(rankTitles, toxicityCfg)
-const { isLineup, getFormattedLineups } = createLineupModule(lineupCfg.lineupPrefix)
+const { isLineup, getFormattedLineups, areLineupsEqual } = createLineupModule(lineupCfg.lineupPrefix)
 
 
 export async function setDefaultRankAndToxicityOnNickname(member: GuildMember) {
@@ -103,10 +104,44 @@ export function suggestTeams(oldState: VoiceState, newState: VoiceState) {
     discord.sendMessage(teamSuggestionChannel)(msg)
 }
 
+let notifyAgendaThatPlayerConnectedCache = {
+  lineupMap: null,
+  lastMsgDate: new Date('1990-10-11T07:00:00'),
+}
+
+export async function notifyAgendaThatPlayerConnected(oldState: VoiceState, newState: VoiceState){
+    const channels = await Promise.all(discord.channels().allVoice)
+
+    const lineupMap: LineupMap = channels.reduce((acc, ch) => {
+        const channelName = ch.name
+        const nicknames = ch.members.map((m: GuildMember) => m.displayName)
+        acc[channelName] = nicknames
+        return acc
+    }, {} as LineupMap)
+
+    if (areLineupsEqual(lineupMap, notifyAgendaThatPlayerConnectedCache.lineupMap))
+      return
+
+    const msg = getFormattedLineups(lineupMap, "*Online no Discord:*", "Todos saíram do Discord")
+    whatsapp.sendMessage(whatsapp.groups().dtox().agenda)(msg)
+
+    notifyAgendaThatPlayerConnectedCache = {
+      lineupMap,
+      lastMsgDate: new Date() // in future, use this info to send less messages
+    }
+}
+
 discord.onLogin(async () => {
     discord.onMemberJoin(setDefaultRankAndToxicityOnNickname)
     discord.onNicknameChange(setToxicityRolesFromNickname)
     discord.onNicknameChange(updateRankings)
     discord.onRoleChange(updateLineups)
     discord.onVoiceChannelGetsFull(await discord.channels().voice().mix().matchmakingPlayers())(suggestTeams)
+    discord.onTrackedVoiceChannelUpdate(notifyAgendaThatPlayerConnected)
 })
+
+whatsapp.onLogin(() => {
+    console.log('Whatsapp Bot Ready')
+});
+
+

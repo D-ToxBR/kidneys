@@ -23,35 +23,53 @@ export const createLineupModule = (lineupPrefix: string) => {
         return result
     }
 
-   const getFormattedLineups = (lineups: LineupsMap) => {
+    const areLineupsEqual = (map1: LineupsMap, map2: LineupsMap): boolean => {
+
+      if (!map1 || !map2){
+        return false;
+      }
+
+      const areArraysEqual = (arr1: string[], arr2: string[]): boolean =>
+        arr1.length === arr2.length && arr1.every((value, index) => value === arr2[index]);
+
+      const keys1 = Object.keys(map1);
+      const keys2 = Object.keys(map2);
+
+      if (keys1.length !== keys2.length) {
+        return false;
+      }
+
+      return keys1.every(key =>
+        map2.hasOwnProperty(key) && areArraysEqual(map1[key], map2[key])
+      );
+    }
+
+   const getFormattedLineups = (lineups: LineupsMap, title: string = "# Lineups", noPlayersMsg: string = "") => {
         return (): string[] => {
 
-          if (!lineups || !Object.keys(lineups)){
-            return []
-          }
-          
+          const allPlayers: string[] = Object.values(lineups)
           const lineupNames = Object.keys(lineups).sort(sort.strings.ascending);
-          
-          if (lineupNames.length === 0) {
-              return ['No lineups found.'];
-          }
+          const hasNoPlayers = (!lineups 
+            || lineupNames.length === 0
+            || allPlayers.every(l => l.length === 0))
 
-          const lines: string[] = ['# Lineups', '', '']
+
+          if (hasNoPlayers){
+            return [noPlayersMsg];
+          }
+          
+          const lines: string[] = [title, '', '']
           
           lineupNames.forEach((lineupName) => {
-              const players = lineups[lineupName].sort(sort.strings.ascending);
-              lines.push(`- ${makeBoldUntilParenthesis(lineupName)}`);
-              
-              if (players.length === 0) {
-                  lines.push('  (no players)');
-              } else {
-                  players.forEach((player: string) => {
-                      lines.push(player);
-                  });
-              }
-              
-              lines.push('');
+            const players = lineups[lineupName].sort(sort.strings.ascending);
+            if (players.length === 0)
+              return
+
+            lines.push(`- ${makeBoldUntilParenthesis(lineupName)}`);
+            lines.push(...players);
+            lines.push('');
           });
+
           return lines
         }
     }
@@ -73,6 +91,7 @@ export const createLineupModule = (lineupPrefix: string) => {
     return {
         isLineup,
         getFormattedLineups,
+        areLineupsEqual
     };
 };
 

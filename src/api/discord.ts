@@ -282,9 +282,38 @@ const onVoiceChannelGetsFull = (voiceChannel: VoiceChannel) => (listener: VoiceU
     })
 }
 
+const onTrackedVoiceChannelUpdate = (listener: VoiceUpdateListener) => {
+    onVoiceStateUpdate(async (oldVoiceState, newVoiceState) => {
+        const fakeNullChannel = {id: null, name: null}
+
+
+        const oldChannel = oldVoiceState.channel
+          ? oldVoiceState.channel
+          : fakeNullChannel
+
+        const newChannel = newVoiceState.channel
+          ? newVoiceState.channel
+          : fakeNullChannel
+
+        const targetChannel = newChannel === fakeNullChannel
+          ? oldChannel
+          : newChannel
+
+        const trackedChannels = await Promise.all(channels().allVoice)
+        const isTracked = trackedChannels.some(trackedChannel => 
+                                               trackedChannel.id === newChannel.id
+                                            || trackedChannel.id === oldChannel.id)
+        
+        if (!isTracked) return
+
+        console.log(`Something changed in the Tracked Voice Room: <${targetChannel.name}>`)
+        listener(oldVoiceState, newVoiceState)
+    })
+}
+
 const onVoiceStateUpdate = (listener: VoiceUpdateListener) => {
     discord.on('voiceStateUpdate',
-        withLogMsg("Someone joined or left a voice room")(listener))
+        withLogMsg("Something changed in the a Voice Room")(listener))
 }
 
 const onGuildMemberUpdate = (listener: MemberUpdateListener) => {
@@ -337,6 +366,7 @@ export default {
     onLogin,
     onNicknameChange,
     onVoiceChannelGetsFull,
+    onTrackedVoiceChannelUpdate,
     onVoiceStateUpdate,
     onGuildMemberUpdate,
     sendMessage,
