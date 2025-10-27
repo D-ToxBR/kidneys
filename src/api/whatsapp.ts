@@ -77,33 +77,31 @@ const upsertMsg = (getGroup: () => Chat | Promise<Chat>) =>
             return;
         }
 
-        const lastBotMsg = cache.lastBotMsgByChat.get(group.id._serialized);
+        const maybeLastBotMsg = cache.lastBotMsgByChat.get(group.id._serialized);
 
-        if (lastBotMsg) {
-            try {
-                console.log(`Attempting to edit last message in group <${group.name}>...`);
-                const editResult = await lastBotMsg.edit(msg);
-                
-                if (editResult) {
-                    console.log(`Successfully edited message in group <${group.name}>`);
-                    return;
-                } else {
-                    throw new Error('Edit returned falsy value');
-                }
-            } catch (editError) {
-                console.log(`Could not edit message in group <${group.name}>. Attempting to delete...`);
-                console.log(`Edit error:`, editError);
-                
-                try {
-                    await lastBotMsg.delete(true);
-                    console.log(`Successfully deleted last message in group <${group.name}>`);
-                } catch (deleteError) {
-                    console.log(`Could not delete message in group <${group.name}>. Will send new message anyway.`);
-                }
-            }
+        if (maybeLastBotMsg === undefined || !maybeLastBotMsg)
+          return await sendMsg(getGroup)(getTextLines);
+
+        const lastBotMsg = maybeLastBotMsg as Message;
+
+        try {
+            console.log(`Attempting to edit last message in group <${group.name}>...`);
+            const editResult = await lastBotMsg.edit(msg);
+            
+            if (editResult) {
+                console.log(`Successfully edited message in group <${group.name}>`);
+                return;
+            } 
+        } catch (editError) { console.error(`Edit error:`, editError) }
+        console.log(`Could not edit message in group <${group.name}>. Attempting to delete...`);
+        
+        try {
+            await lastBotMsg.delete(true);
+            console.log(`Successfully deleted last message in group <${group.name}>`);
+        } catch (deleteError) {
+            console.log(`Could not delete message in group <${group.name}>. Will send new message anyway.`);
         }
-
-        await sendMsg(getGroup)(getTextLines);
+        return await sendMsg(getGroup)(getTextLines);
     };
 
 
