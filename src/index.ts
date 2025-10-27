@@ -123,7 +123,7 @@ export async function notifyAgendaThatPlayerConnected(oldState: VoiceState, newS
       return
 
     const msg = getFormattedLineups(lineupMap, "*Online no Discord:*", "Todos saíram do Discord")
-    whatsapp.sendMessage(whatsapp.groups().dtox().agenda)(msg)
+    whatsapp.upsertMsg(whatsapp.groups().dtox().agenda)(msg)
 
     notifyAgendaThatPlayerConnectedCache = {
       lineupMap,

@@ -1,4 +1,4 @@
-import { Client, LocalAuth, type Chat } from 'whatsapp-web.js';
+import { Client, LocalAuth, type Chat, type Message } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import cfg from "../../cfg/whatsappCfg.ts";
 import { getOrThrow } from "../helpers/typeHelper/typeHelper.ts";
@@ -9,6 +9,9 @@ const groups = () => ({
     dtox: mapStringLeafs(getGroupById)(cfg.groups.dtox),
 })
 
+const cache: {lastBotMsgByChat: Map<string, Message>} = {
+  lastBotMsgByChat: new Map()
+}
 
 const whatsapp = new Client({
     authStrategy: new LocalAuth(),
@@ -60,7 +63,51 @@ const getGroupById = async (groupId: string): Promise<Chat> => {
     );
 };
 
-const sendMessage = (getGroup: () => Chat | Promise<Chat>) => 
+
+const upsertMsg = (getGroup: () => Chat | Promise<Chat>) =>
+    // edits last message
+    // if can't edit, try deleting it and sends again.
+    async (getTextLines: () => string[]) => {
+        const group = await getGroup();
+        const textLines = getTextLines();
+        const msg = textLines.join('\n');
+        
+        if (!msg.length) {
+            console.log(`Not upserting message to group <${group.name}> because it is empty.`);
+            return;
+        }
+
+        const lastBotMsg = cache.lastBotMsgByChat.get(group.id._serialized);
+
+        if (lastBotMsg) {
+            try {
+                console.log(`Attempting to edit last message in group <${group.name}>...`);
+                const editResult = await lastBotMsg.edit(msg);
+                
+                if (editResult) {
+                    console.log(`Successfully edited message in group <${group.name}>`);
+                    return;
+                } else {
+                    throw new Error('Edit returned falsy value');
+                }
+            } catch (editError) {
+                console.log(`Could not edit message in group <${group.name}>. Attempting to delete...`);
+                console.log(`Edit error:`, editError);
+                
+                try {
+                    await lastBotMsg.delete(true);
+                    console.log(`Successfully deleted last message in group <${group.name}>`);
+                } catch (deleteError) {
+                    console.log(`Could not delete message in group <${group.name}>. Will send new message anyway.`);
+                }
+            }
+        }
+
+        await sendMsg(getGroup)(getTextLines);
+    };
+
+
+const sendMsg = (getGroup: () => Chat | Promise<Chat>) => 
     async (getTextLines: () => string[]) => {
         const group = await getGroup();
         const textLines = getTextLines();
@@ -70,14 +117,17 @@ const sendMessage = (getGroup: () => Chat | Promise<Chat>) =>
             console.log(`Not sending message to group <${group.name}> because it is empty.`);
         } else {
             console.log(`Sending to Whatsapp group <${group.name}> the following message:\n${msg}`);
-            await group.sendMessage(msg);
+            const sentMessage = await group.sendMessage(msg);
+            cache.lastBotMsgByChat.set(group.id._serialized, sentMessage);
+
         }
     };
 
 export default {
     onLogin,
     getGroupById,
-    sendMessage,
+    upsertMsg,
+    sendMsg,
     groups
 };
 
